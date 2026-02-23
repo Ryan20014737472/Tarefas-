@@ -1,161 +1,953 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tarefas</title>
-
-<style>
-body{
-  margin:0;
-  font-family:Arial,Helvetica,sans-serif;
-  background:#0f1724;
-  color:white;
-}
-
-header{
-  padding:20px;
-  font-size:28px;
-  font-weight:bold;
-}
-
-.container{
-  max-width:700px;
-  margin:auto;
-  padding:15px;
-}
-
-.add{
-  display:flex;
-  gap:10px;
-}
-
-input{
-  flex:1;
-  padding:10px;
-  border-radius:8px;
-  border:none;
-}
-
-button{
-  padding:10px 15px;
-  border:none;
-  border-radius:8px;
-  background:#7c3aed;
-  color:white;
-  cursor:pointer;
-}
-
-button:hover{
-  opacity:0.85;
-}
-
-.task{
-  background:#1b253a;
-  margin-top:12px;
-  padding:12px;
-  border-radius:10px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-
-.done{
-  text-decoration:line-through;
-  opacity:0.6;
-}
-
-.actions button{
-  background:#334155;
-  margin-left:6px;
-}
-
-.delete{
-  background:#ef4444;
-}
-
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Agenda</title>
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --glass:rgba(255,255,255,.04);
+      --text:#e6eef8;
+      --muted:#94a3b8;
+      --accent:#7c3aed;
+      --danger:#ef4444;
+      --ok:#10b981;
+      --border:rgba(255,255,255,.08);
+      --shadow:0 10px 24px rgba(0,0,0,.35);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,var(--bg),#071027);
+      color:var(--text);
+      min-height:100vh;
+      padding:18px;
+    }
+    .wrap{max-width:1100px;margin:0 auto}
+    header{
+      display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+      margin-bottom:14px;
+    }
+    .brand{display:flex;gap:10px;align-items:center}
+    .logo{
+      width:42px;height:42px;border-radius:12px;background:var(--glass);
+      display:grid;place-items:center;border:1px solid var(--border);
+      box-shadow:var(--shadow);
+    }
+    h1{margin:0;font-size:18px}
+    .sub{margin:0;color:var(--muted);font-size:12px}
+    .topActions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    button, .btn{
+      border:1px solid var(--border);
+      background:var(--glass);
+      color:var(--text);
+      padding:9px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      box-shadow:0 8px 18px rgba(0,0,0,.22);
+    }
+    button.primary{background:var(--accent);border-color:transparent}
+    button.danger{background:var(--danger);border-color:transparent}
+    button.ok{background:var(--ok);border-color:transparent}
+    button:active{transform:translateY(1px)}
+    input, select, textarea{
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.18);
+      color:var(--text);
+      padding:10px 11px;
+      border-radius:10px;
+      outline:none;
+    }
+    input::placeholder, textarea::placeholder{color:rgba(148,163,184,.8)}
+    .grid{
+      display:grid;
+      grid-template-columns: 1.4fr .9fr;
+      gap:14px;
+      align-items:start;
+    }
+    @media(max-width:920px){.grid{grid-template-columns:1fr}}
+    .card{
+      background:linear-gradient(180deg,var(--card),#071221);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px;
+      box-shadow:var(--shadow);
+    }
+    .card h2{margin:0 0 10px;font-size:14px;color:var(--muted);font-weight:600}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .row > *{flex:1}
+    .row .shrink{flex:0 0 auto}
+    .pill{
+      display:inline-flex;gap:8px;align-items:center;
+      padding:7px 10px;border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.03);
+      color:var(--muted);
+      font-size:12px;
+    }
+    .list{margin-top:10px}
+    .item{
+      display:flex;gap:10px;align-items:flex-start;
+      padding:12px;
+      border-radius:12px;
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.05);
+      margin-bottom:10px;
+    }
+    .item.done{
+      opacity:.65;
+    }
+    .item.done .title{
+      text-decoration:line-through;
+    }
+    .left{display:flex;gap:10px;align-items:flex-start;flex:1}
+    .title{margin:0;font-size:14px}
+    .meta{margin:6px 0 0;color:var(--muted);font-size:12px;display:flex;gap:10px;flex-wrap:wrap}
+    .tag{
+      display:inline-block;
+      padding:3px 8px;
+      border-radius:999px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.06);
+      color:var(--muted);
+      font-size:12px;
+    }
+    .right{display:flex;gap:8px;align-items:center}
+    .iconBtn{
+      padding:8px 10px;border-radius:10px;
+      font-size:12px;
+    }
+    .empty{
+      text-align:center;
+      color:var(--muted);
+      padding:30px 10px;
+      border:1px dashed rgba(255,255,255,.12);
+      border-radius:14px;
+      background:rgba(255,255,255,.02);
+    }
+    .divider{height:1px;background:rgba(255,255,255,.07);margin:12px 0}
+    .small{font-size:12px;color:var(--muted)}
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:11px;
+      padding:2px 6px;
+      border-radius:6px;
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(0,0,0,.18);
+      color:var(--muted);
+    }
+    /* modal */
+    .modalBackdrop{
+      position:fixed;inset:0;
+      background:rgba(0,0,0,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      z-index:50;
+    }
+    .modal{
+      width:min(680px,100%);
+      background:linear-gradient(180deg,var(--card),#071221);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:14px;
+      box-shadow:0 20px 60px rgba(0,0,0,.6);
+    }
+    .modal header{
+      margin:0 0 10px;
+      justify-content:space-between;
+    }
+    .modal h3{margin:0;font-size:14px}
+    .modalActions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+    .hint{color:var(--muted);font-size:12px;margin-top:6px}
+    .colorPreview{
+      width:16px;height:16px;border-radius:6px;border:1px solid rgba(255,255,255,.15);
+      background:var(--accent);
+      display:inline-block;
+      vertical-align:-3px;
+      margin-left:6px;
+    }
+  </style>
 </head>
 
 <body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">📅</div>
+      <div>
+        <h1 id="appTitle">Agenda</h1>
+        <p class="sub" id="appSubtitle">Tarefas salvas no seu navegador (offline)</p>
+      </div>
+    </div>
 
-<header>Tarefas</header>
+    <div class="topActions">
+      <span class="pill" id="todayPill">—</span>
+      <button class="btn" id="openSettings">Personalizar</button>
+      <button class="btn" id="exportBtn">Exportar</button>
+      <input type="file" id="importFile" accept="application/json" hidden />
+      <button class="btn" id="importBtn">Importar</button>
+    </div>
+  </header>
 
-<div class="container">
+  <div class="grid">
+    <main class="card">
+      <h2>Adicionar tarefa</h2>
 
-  <div class="add">
-    <input id="taskInput" placeholder="Nova tarefa...">
-    <button onclick="addTask()">Adicionar</button>
+      <div class="row" style="margin-bottom:10px">
+        <input id="titleInput" type="text" placeholder="Título (ex: Estudar Física)" />
+        <input id="dateInput" type="date" class="shrink" />
+        <input id="timeInput" type="time" class="shrink" />
+      </div>
+
+      <div class="row" style="margin-bottom:10px">
+        <input id="tagsInput" type="text" placeholder="Tags (ex: escola, FTC, casa)" />
+        <select id="priorityInput" class="shrink" style="min-width:170px">
+          <option value="0">Prioridade: normal</option>
+          <option value="1">Prioridade: alta</option>
+          <option value="2">Prioridade: urgente</option>
+        </select>
+      </div>
+
+      <textarea id="notesInput" rows="2" placeholder="Notas (opcional)"></textarea>
+
+      <div class="row" style="margin-top:10px">
+        <button class="primary" id="addBtn" class="shrink">Adicionar</button>
+        <button class="btn shrink" id="clearInputs">Limpar</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <h2>Suas tarefas</h2>
+
+      <div class="row" style="margin-bottom:10px">
+        <select id="filterStatus" class="shrink" style="min-width:170px">
+          <option value="all">Todas</option>
+          <option value="active">Ativas</option>
+          <option value="done">Concluídas</option>
+        </select>
+
+        <select id="sortBy" class="shrink" style="min-width:210px">
+          <option value="due_asc">Ordenar: vencimento (próximo)</option>
+          <option value="due_desc">Ordenar: vencimento (longe)</option>
+          <option value="created_desc">Ordenar: novas primeiro</option>
+          <option value="created_asc">Ordenar: antigas primeiro</option>
+          <option value="priority_desc">Ordenar: prioridade (maior)</option>
+        </select>
+
+        <input id="searchInput" type="text" placeholder="Buscar (título, notas, tags)" />
+        <select id="tagFilter" class="shrink" style="min-width:190px">
+          <option value="">Filtrar por tag</option>
+        </select>
+      </div>
+
+      <div class="small" id="stats">—</div>
+
+      <div class="list" id="list"></div>
+      <div class="empty" id="empty" style="display:none">
+        Nenhuma tarefa encontrada. Adicione uma acima.
+        <div class="hint">Dica: pressione <span class="kbd">Enter</span> no campo de título para adicionar.</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row">
+        <button class="btn" id="markAllDone">Finalizar todas</button>
+        <button class="btn" id="markAllActive">Reativar todas</button>
+        <button class="btn" id="removeDone">Remover concluídas</button>
+        <button class="danger" id="removeAll">Remover tudo</button>
+      </div>
+    </main>
+
+    <aside class="card">
+      <h2>Resumo</h2>
+      <div class="row" style="gap:8px;margin-bottom:10px">
+        <span class="pill" id="countAll">Total: 0</span>
+        <span class="pill" id="countActive">Ativas: 0</span>
+        <span class="pill" id="countDone">Concluídas: 0</span>
+      </div>
+      <div class="divider"></div>
+      <h2>Como usar</h2>
+      <ul class="small" style="line-height:1.6;margin:0;padding-left:18px;color:var(--muted)">
+        <li>Clique no ✅ para marcar como concluída/ativa.</li>
+        <li>Use “Editar” para mudar título, data, notas, tags e prioridade.</li>
+        <li>Os dados ficam salvos no navegador (<b>localStorage</b>).</li>
+        <li>Faça backup com Exportar e restaure com Importar.</li>
+      </ul>
+
+      <div class="divider"></div>
+      <h2>Personalização</h2>
+      <div class="small" style="color:var(--muted)">
+        Use o botão <b>Personalizar</b> para mudar o nome da agenda e as cores.
+        <span class="colorPreview"></span>
+      </div>
+    </aside>
   </div>
+</div>
 
-  <div id="list"></div>
+<!-- SETTINGS MODAL -->
+<div class="modalBackdrop" id="settingsBackdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Personalizar">
+    <header>
+      <h3>Personalizar agenda</h3>
+      <button class="btn" id="closeSettings">Fechar</button>
+    </header>
 
+    <div class="row" style="margin-bottom:10px">
+      <input id="siteNameInput" type="text" placeholder="Nome da agenda (ex: Agenda do Batistel)" />
+      <input id="accentInput" type="color" class="shrink" style="min-width:120px;height:42px;padding:6px" />
+    </div>
+
+    <div class="row" style="margin-bottom:10px">
+      <input id="bgInput" type="color" class="shrink" style="min-width:120px;height:42px;padding:6px" />
+      <div class="small" style="align-self:center;color:var(--muted)">
+        Cor de fundo (opcional). Se quiser manter o padrão, deixe como está.
+      </div>
+    </div>
+
+    <div class="modalActions">
+      <button class="btn" id="resetTheme">Restaurar padrão</button>
+      <button class="ok" id="saveTheme">Salvar</button>
+    </div>
+
+    <div class="hint">
+      Tudo fica salvo localmente no seu navegador. Se limpar os dados do navegador, perde — use Exportar.
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modalBackdrop" id="editBackdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Editar tarefa">
+    <header>
+      <h3>Editar tarefa</h3>
+      <button class="btn" id="closeEdit">Fechar</button>
+    </header>
+
+    <input id="editTitle" type="text" placeholder="Título" style="margin-bottom:10px" />
+
+    <div class="row" style="margin-bottom:10px">
+      <input id="editDate" type="date" />
+      <input id="editTime" type="time" />
+      <select id="editPriority" class="shrink" style="min-width:190px">
+        <option value="0">Prioridade: normal</option>
+        <option value="1">Prioridade: alta</option>
+        <option value="2">Prioridade: urgente</option>
+      </select>
+    </div>
+
+    <input id="editTags" type="text" placeholder="Tags (separadas por vírgula)" style="margin-bottom:10px" />
+    <textarea id="editNotes" rows="3" placeholder="Notas"></textarea>
+
+    <div class="modalActions" style="margin-top:10px">
+      <button class="danger" id="deleteTask">Excluir</button>
+      <button class="ok" id="saveTask">Salvar</button>
+    </div>
+  </div>
 </div>
 
 <script>
-const KEY="tarefas_simples";
+/* ============================
+   STORAGE
+============================ */
+const STORE_TASKS = "agenda_tasks_v2";
+const STORE_PREFS = "agenda_prefs_v2";
 
-let tarefas=[];
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
-function salvar(){
-  localStorage.setItem(KEY,JSON.stringify(tarefas));
+function loadJSON(key, fallback){
+  try{
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  }catch(_){
+    return fallback;
+  }
+}
+function saveJSON(key, value){
+  localStorage.setItem(key, JSON.stringify(value));
 }
 
-function carregar(){
-  const dados=localStorage.getItem(KEY);
-  tarefas=dados?JSON.parse(dados):[];
+/* ============================
+   STATE
+============================ */
+let tasks = loadJSON(STORE_TASKS, []);
+let prefs = loadJSON(STORE_PREFS, {
+  name: "Agenda",
+  accent: "#7c3aed",
+  bg: "#0f1724"
+});
+
+/* ============================
+   DOM
+============================ */
+const el = (id) => document.getElementById(id);
+
+const listEl = el("list");
+const emptyEl = el("empty");
+
+const titleInput = el("titleInput");
+const dateInput = el("dateInput");
+const timeInput = el("timeInput");
+const tagsInput = el("tagsInput");
+const notesInput = el("notesInput");
+const priorityInput = el("priorityInput");
+
+const filterStatus = el("filterStatus");
+const sortBy = el("sortBy");
+const searchInput = el("searchInput");
+const tagFilter = el("tagFilter");
+
+const statsEl = el("stats");
+const todayPill = el("todayPill");
+
+const appTitle = el("appTitle");
+
+const countAll = el("countAll");
+const countActive = el("countActive");
+const countDone = el("countDone");
+
+/* modals */
+const settingsBackdrop = el("settingsBackdrop");
+const editBackdrop = el("editBackdrop");
+
+/* settings inputs */
+const siteNameInput = el("siteNameInput");
+const accentInput = el("accentInput");
+const bgInput = el("bgInput");
+
+/* edit inputs */
+const editTitle = el("editTitle");
+const editDate = el("editDate");
+const editTime = el("editTime");
+const editTags = el("editTags");
+const editNotes = el("editNotes");
+const editPriority = el("editPriority");
+
+let editingId = null;
+
+/* ============================
+   THEME / PREFS
+============================ */
+function applyPrefs(){
+  appTitle.textContent = prefs.name || "Agenda";
+  document.title = prefs.name || "Agenda";
+  document.documentElement.style.setProperty("--accent", prefs.accent || "#7c3aed");
+  document.documentElement.style.setProperty("--bg", prefs.bg || "#0f1724");
+}
+applyPrefs();
+
+function openSettings(){
+  siteNameInput.value = prefs.name || "Agenda";
+  accentInput.value = prefs.accent || "#7c3aed";
+  bgInput.value = prefs.bg || "#0f1724";
+  settingsBackdrop.style.display = "flex";
+  settingsBackdrop.setAttribute("aria-hidden", "false");
+}
+function closeSettings(){
+  settingsBackdrop.style.display = "none";
+  settingsBackdrop.setAttribute("aria-hidden", "true");
+}
+el("openSettings").addEventListener("click", openSettings);
+el("closeSettings").addEventListener("click", closeSettings);
+settingsBackdrop.addEventListener("click", (e)=>{ if(e.target === settingsBackdrop) closeSettings(); });
+
+el("resetTheme").addEventListener("click", ()=>{
+  prefs = { name:"Agenda", accent:"#7c3aed", bg:"#0f1724" };
+  saveJSON(STORE_PREFS, prefs);
+  applyPrefs();
+  siteNameInput.value = prefs.name;
+  accentInput.value = prefs.accent;
+  bgInput.value = prefs.bg;
+});
+
+el("saveTheme").addEventListener("click", ()=>{
+  prefs.name = (siteNameInput.value || "").trim() || "Agenda";
+  prefs.accent = accentInput.value || "#7c3aed";
+  prefs.bg = bgInput.value || "#0f1724";
+  saveJSON(STORE_PREFS, prefs);
+  applyPrefs();
+  closeSettings();
+});
+
+/* ============================
+   DATE HELPERS
+============================ */
+function toISODate(dateObj){
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth()+1).padStart(2,"0");
+  const d = String(dateObj.getDate()).padStart(2,"0");
+  return `${y}-${m}-${d}`;
+}
+function fmtDate(iso){
+  if(!iso) return "—";
+  const [y,m,d] = iso.split("-").map(Number);
+  const dt = new Date(y, (m||1)-1, d||1);
+  return dt.toLocaleDateString("pt-BR");
+}
+function dueLabel(t){
+  if(!t.dueDate && !t.dueTime) return "Sem vencimento";
+  const datePart = t.dueDate ? fmtDate(t.dueDate) : "—";
+  const timePart = t.dueTime ? t.dueTime : "";
+  return timePart ? `${datePart} • ${timePart}` : datePart;
+}
+function priorityLabel(p){
+  if(p === 2) return "Urgente";
+  if(p === 1) return "Alta";
+  return "Normal";
 }
 
-function render(){
-  const list=document.getElementById("list");
-  list.innerHTML="";
-
-  tarefas.forEach((t,i)=>{
-    const div=document.createElement("div");
-    div.className="task"+(t.done?" done":"");
-
-    const title=document.createElement("span");
-    title.textContent=t.text;
-
-    title.onclick=()=>{
-      tarefas[i].done=!tarefas[i].done;
-      salvar();
-      render();
-    };
-
-    const actions=document.createElement("div");
-    actions.className="actions";
-
-    const del=document.createElement("button");
-    del.textContent="X";
-    del.className="delete";
-    del.onclick=()=>{
-      tarefas.splice(i,1);
-      salvar();
-      render();
-    };
-
-    actions.appendChild(del);
-    div.appendChild(title);
-    div.appendChild(actions);
-    list.appendChild(div);
-  });
+/* ============================
+   CRUD TASKS
+============================ */
+function normalizeTags(raw){
+  return (raw || "")
+    .split(",")
+    .map(s=>s.trim())
+    .filter(Boolean)
+    .slice(0, 15);
 }
 
 function addTask(){
-  const input=document.getElementById("taskInput");
-  const text=input.value.trim();
-  if(!text)return;
+  const title = titleInput.value.trim();
+  if(!title) return;
 
-  tarefas.push({text,done:false});
-  input.value="";
-  salvar();
+  const t = {
+    id: uid(),
+    title,
+    notes: (notesInput.value || "").trim(),
+    tags: normalizeTags(tagsInput.value),
+    dueDate: dateInput.value || null,
+    dueTime: timeInput.value || null,
+    priority: Number(priorityInput.value || 0),
+    done: false,
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  };
+
+  tasks.push(t);
+  saveJSON(STORE_TASKS, tasks);
+  clearInputs();
   render();
 }
 
-carregar();
-render();
-</script>
+function clearInputs(){
+  titleInput.value = "";
+  dateInput.value = "";
+  timeInput.value = "";
+  tagsInput.value = "";
+  notesInput.value = "";
+  priorityInput.value = "0";
+  titleInput.focus();
+}
 
+el("addBtn").addEventListener("click", addTask);
+el("clearInputs").addEventListener("click", clearInputs);
+
+// Enter no título adiciona
+titleInput.addEventListener("keydown", (e)=>{
+  if(e.key === "Enter"){
+    e.preventDefault();
+    addTask();
+  }
+});
+
+function toggleDone(id){
+  const t = tasks.find(x=>x.id===id);
+  if(!t) return;
+  t.done = !t.done;
+  t.updatedAt = Date.now();
+  saveJSON(STORE_TASKS, tasks);
+  render();
+}
+
+function removeTask(id){
+  tasks = tasks.filter(x=>x.id!==id);
+  saveJSON(STORE_TASKS, tasks);
+  render();
+}
+
+function openEdit(id){
+  const t = tasks.find(x=>x.id===id);
+  if(!t) return;
+
+  editingId = id;
+  editTitle.value = t.title || "";
+  editDate.value = t.dueDate || "";
+  editTime.value = t.dueTime || "";
+  editTags.value = (t.tags || []).join(", ");
+  editNotes.value = t.notes || "";
+  editPriority.value = String(t.priority ?? 0);
+
+  editBackdrop.style.display = "flex";
+  editBackdrop.setAttribute("aria-hidden", "false");
+  editTitle.focus();
+}
+function closeEdit(){
+  editBackdrop.style.display = "none";
+  editBackdrop.setAttribute("aria-hidden", "true");
+  editingId = null;
+}
+el("closeEdit").addEventListener("click", closeEdit);
+editBackdrop.addEventListener("click", (e)=>{ if(e.target === editBackdrop) closeEdit(); });
+
+el("saveTask").addEventListener("click", ()=>{
+  if(!editingId) return;
+  const t = tasks.find(x=>x.id===editingId);
+  if(!t) return;
+
+  const newTitle = editTitle.value.trim();
+  if(!newTitle) return;
+
+  t.title = newTitle;
+  t.dueDate = editDate.value || null;
+  t.dueTime = editTime.value || null;
+  t.tags = normalizeTags(editTags.value);
+  t.notes = (editNotes.value || "").trim();
+  t.priority = Number(editPriority.value || 0);
+  t.updatedAt = Date.now();
+
+  saveJSON(STORE_TASKS, tasks);
+  closeEdit();
+  render();
+});
+
+el("deleteTask").addEventListener("click", ()=>{
+  if(!editingId) return;
+  if(!confirm("Excluir esta tarefa?")) return;
+  removeTask(editingId);
+  closeEdit();
+});
+
+/* ============================
+   FILTERS / SORT / SEARCH
+============================ */
+[filterStatus, sortBy, searchInput, tagFilter].forEach(node=>{
+  node.addEventListener("input", render);
+});
+
+function getVisibleTasks(){
+  const status = filterStatus.value;
+  const q = (searchInput.value || "").trim().toLowerCase();
+  const tag = tagFilter.value;
+
+  let arr = tasks.slice();
+
+  arr = arr.filter(t=>{
+    if(status === "active" && t.done) return false;
+    if(status === "done" && !t.done) return false;
+    if(tag && !(t.tags || []).includes(tag)) return false;
+
+    if(q){
+      const hay = (t.title + " " + (t.notes||"")  + " " + (t.tags||[]).join(" ")).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const sort = sortBy.value;
+  const dueKey = (t)=>{
+    if(!t.dueDate) return Infinity;
+    const dt = new Date(t.dueDate + "T" + (t.dueTime || "00:00"));
+    return dt.getTime();
+  };
+
+  if(sort === "due_asc") arr.sort((a,b)=> dueKey(a)-dueKey(b));
+  if(sort === "due_desc") arr.sort((a,b)=> dueKey(b)-dueKey(a));
+  if(sort === "created_desc") arr.sort((a,b)=> b.createdAt-a.createdAt);
+  if(sort === "created_asc") arr.sort((a,b)=> a.createdAt-b.createdAt);
+  if(sort === "priority_desc") arr.sort((a,b)=> (b.priority||0)-(a.priority||0) || (dueKey(a)-dueKey(b)));
+
+  return arr;
+}
+
+function refreshTagFilter(){
+  const current = tagFilter.value;
+  const tags = new Set();
+  tasks.forEach(t => (t.tags||[]).forEach(tag => tags.add(tag)));
+  const sorted = Array.from(tags).sort((a,b)=>a.localeCompare(b,"pt-BR"));
+
+  tagFilter.innerHTML = `<option value="">Filtrar por tag</option>`;
+  sorted.forEach(tag=>{
+    const opt = document.createElement("option");
+    opt.value = tag;
+    opt.textContent = tag;
+    tagFilter.appendChild(opt);
+  });
+
+  // tentar manter seleção
+  if(sorted.includes(current)) tagFilter.value = current;
+}
+
+function render(){
+  refreshTagFilter();
+  listEl.innerHTML = "";
+
+  const visible = getVisibleTasks();
+  emptyEl.style.display = visible.length ? "none" : "block";
+
+  // stats
+  const total = tasks.length;
+  const done = tasks.filter(t=>t.done).length;
+  const active = total - done;
+
+  countAll.textContent = `Total: ${total}`;
+  countActive.textContent = `Ativas: ${active}`;
+  countDone.textContent = `Concluídas: ${done}`;
+  statsEl.textContent = `Mostrando ${visible.length} • Total ${total} • Ativas ${active} • Concluídas ${done}`;
+
+  visible.forEach(t=>{
+    const item = document.createElement("div");
+    item.className = "item" + (t.done ? " done" : "");
+
+    const left = document.createElement("div");
+    left.className = "left";
+
+    const check = document.createElement("button");
+    check.className = "iconBtn " + (t.done ? "ok" : "btn");
+    check.textContent = t.done ? "✓" : "✅";
+    check.title = "Marcar como concluída/ativa";
+    check.addEventListener("click", ()=>toggleDone(t.id));
+
+    const content = document.createElement("div");
+    content.style.flex = "1";
+
+    const title = document.createElement("p");
+    title.className = "title";
+    title.textContent = t.title;
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+
+    const due = document.createElement("span");
+    due.textContent = `Venc.: ${dueLabel(t)}`;
+
+    const pr = document.createElement("span");
+    pr.textContent = `Prior.: ${priorityLabel(t.priority)}`;
+
+    meta.appendChild(due);
+    meta.appendChild(pr);
+
+    const tagsWrap = document.createElement("div");
+    tagsWrap.style.marginTop = "6px";
+    (t.tags||[]).forEach(tag=>{
+      const tg = document.createElement("span");
+      tg.className = "tag";
+      tg.textContent = tag;
+      tagsWrap.appendChild(tg);
+    });
+
+    if(t.notes){
+      const notes = document.createElement("div");
+      notes.className = "small";
+      notes.style.marginTop = "6px";
+      notes.textContent = t.notes;
+      content.appendChild(title);
+      content.appendChild(meta);
+      content.appendChild(tagsWrap);
+      content.appendChild(notes);
+    }else{
+      content.appendChild(title);
+      content.appendChild(meta);
+      content.appendChild(tagsWrap);
+    }
+
+    left.appendChild(check);
+    left.appendChild(content);
+
+    const right = document.createElement("div");
+    right.className = "right";
+
+    const editBtn = document.createElement("button");
+    editBtn.className = "btn iconBtn";
+    editBtn.textContent = "Editar";
+    editBtn.addEventListener("click", ()=>openEdit(t.id));
+
+    const delBtn = document.createElement("button");
+    delBtn.className = "danger iconBtn";
+    delBtn.textContent = "Excluir";
+    delBtn.addEventListener("click", ()=>{
+      if(!confirm("Excluir esta tarefa?")) return;
+      removeTask(t.id);
+    });
+
+    right.appendChild(editBtn);
+    right.appendChild(delBtn);
+
+    item.appendChild(left);
+    item.appendChild(right);
+
+    listEl.appendChild(item);
+  });
+}
+
+/* ============================
+   BULK ACTIONS
+============================ */
+el("markAllDone").addEventListener("click", ()=>{
+  if(!tasks.length) return;
+  if(!confirm("Finalizar todas as tarefas?")) return;
+  tasks.forEach(t=>{ t.done=true; t.updatedAt=Date.now(); });
+  saveJSON(STORE_TASKS, tasks);
+  render();
+});
+
+el("markAllActive").addEventListener("click", ()=>{
+  if(!tasks.length) return;
+  if(!confirm("Marcar todas como ativas?")) return;
+  tasks.forEach(t=>{ t.done=false; t.updatedAt=Date.now(); });
+  saveJSON(STORE_TASKS, tasks);
+  render();
+});
+
+el("removeDone").addEventListener("click", ()=>{
+  const hasDone = tasks.some(t=>t.done);
+  if(!hasDone) return;
+  if(!confirm("Remover todas as tarefas concluídas?")) return;
+  tasks = tasks.filter(t=>!t.done);
+  saveJSON(STORE_TASKS, tasks);
+  render();
+});
+
+el("removeAll").addEventListener("click", ()=>{
+  if(!tasks.length) return;
+  if(!confirm("Remover TODAS as tarefas?")) return;
+  tasks = [];
+  saveJSON(STORE_TASKS, tasks);
+  render();
+});
+
+/* ============================
+   EXPORT / IMPORT
+============================ */
+el("exportBtn").addEventListener("click", ()=>{
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    prefs,
+    tasks
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "agenda_backup.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+el("importBtn").addEventListener("click", ()=> el("importFile").click());
+
+el("importFile").addEventListener("change", (e)=>{
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+
+  const r = new FileReader();
+  r.onload = ()=>{
+    try{
+      const parsed = JSON.parse(r.result);
+      // aceitar dois formatos: payload completo ou lista
+      let newTasks = [];
+      let newPrefs = null;
+
+      if(Array.isArray(parsed)){
+        newTasks = parsed;
+      }else{
+        newTasks = parsed.tasks || [];
+        newPrefs = parsed.prefs || null;
+      }
+
+      if(!Array.isArray(newTasks)) throw new Error("Formato inválido (tasks)");
+      const modeReplace = confirm("Substituir tudo pela importação?\nOK = substituir\nCancelar = mesclar");
+
+      if(modeReplace){
+        tasks = newTasks.map(t=> ({...t, id: t.id || uid()}));
+        if(newPrefs){
+          prefs = {...prefs, ...newPrefs};
+          saveJSON(STORE_PREFS, prefs);
+          applyPrefs();
+        }
+      }else{
+        const existing = new Set(tasks.map(t=>t.id));
+        newTasks.forEach(t=>{
+          const copy = {...t};
+          copy.id = copy.id && !existing.has(copy.id) ? copy.id : uid();
+          tasks.push(copy);
+        });
+      }
+
+      saveJSON(STORE_TASKS, tasks);
+      render();
+      alert("Importação concluída.");
+    }catch(err){
+      alert("Falha ao importar: " + err.message);
+    }finally{
+      e.target.value = "";
+    }
+  };
+  r.readAsText(f);
+});
+
+/* ============================
+   HEADER / INIT
+============================ */
+function setTodayPill(){
+  const now = new Date();
+  const text = now.toLocaleDateString("pt-BR", {weekday:"short", day:"2-digit", month:"short"}) +
+    " • " + now.toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"});
+  todayPill.textContent = text;
+}
+setTodayPill();
+setInterval(setTodayPill, 30_000);
+
+// exemplo inicial (somente se vazio)
+if(!tasks.length){
+  const today = new Date();
+  const tomorrow = new Date(Date.now()+86400000);
+
+  tasks = [
+    {
+      id: uid(),
+      title: "Criar rotina de estudos",
+      notes: "Separar 30min para revisar e 30min para exercícios.",
+      tags: ["escola"],
+      dueDate: toISODate(tomorrow),
+      dueTime: "18:00",
+      priority: 1,
+      done: false,
+      createdAt: Date.now()-7200000,
+      updatedAt: Date.now()-7200000
+    },
+    {
+      id: uid(),
+      title: "Treinar FTC",
+      notes: "Revisar CAD + lista de peças.",
+      tags: ["FTC","robótica"],
+      dueDate: toISODate(today),
+      dueTime: "20:00",
+      priority: 2,
+      done: false,
+      createdAt: Date.now()-3600000,
+      updatedAt: Date.now()-3600000
+    }
+  ];
+  saveJSON(STORE_TASKS, tasks);
+}
+
+render();
+
+// fechar modais com ESC
+document.addEventListener("keydown", (e)=>{
+  if(e.key === "Escape"){
+    closeSettings();
+    closeEdit();
+  }
+});
+</script>
 </body>
-  </html>
+</html>
+```0
