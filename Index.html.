@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Minhas Tarefas — Batistel</title>
+<style>
+  :root{
+    --bg:#0f1724; --card:#0b1220; --muted:#94a3b8; --accent:#7c3aed; --success:#10b981;
+    --danger:#ef4444; --glass: rgba(255,255,255,0.03);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:linear-gradient(180deg,var(--bg),#071027); color:#e6eef8; min-height:100vh; padding:24px; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;}
+  header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+  h1{font-size:20px;margin:0}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  input[type=text], input[type=date], select {background:var(--card);border:1px solid rgba(255,255,255,0.03);padding:8px 10px;border-radius:8px;color:inherit}
+  button{background:var(--accent);border:0;padding:8px 12px;border-radius:8px;color:white;cursor:pointer}
+  button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04)}
+  .grid{display:grid;grid-template-columns:1fr 340px;gap:18px}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg,var(--card),#071221);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+  .add-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .task{display:flex;gap:12px;align-items:flex-start;padding:10px;border-radius:10px;background:var(--glass);margin-bottom:10px}
+  .task .meta{flex:1}
+  .task h3{margin:0;font-size:15px;display:flex;gap:8px;align-items:center}
+  .task p{margin:6px 0 0;color:var(--muted);font-size:13px}
+  .task .right{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+  .tag{display:inline-block;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,0.03);font-size:12px;margin-right:6px}
+  .small{font-size:13px;color:var(--muted)}
+  .done h3{text-decoration:line-through;color:rgba(255,255,255,0.6)}
+  .footer-actions{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  .search{min-width:180px}
+  .list-empty{text-align:center;color:var(--muted);padding:40px 10px}
+  .pill{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03)}
+  .muted-btn{background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--muted);padding:6px 8px;border-radius:8px}
+  .danger{background:var(--danger)}
+  .success{background:var(--success)}
+  .controls select{padding:6px 8px}
+  .task-actions{display:flex;gap:6px}
+  .editable{background:transparent;border:0;color:inherit;padding:6px;border-radius:6px}
+  .meta-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .note{font-size:13px;color:var(--muted);margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Minhas Tarefas</h1>
+    <div class="controls">
+      <div class="pill small" id="clock">—</div>
+      <button id="exportBtn" class="ghost">Exportar JSON</button>
+      <input id="importFile" type="file" accept="application/json" style="display:none" />
+      <button id="importBtn" class="ghost">Importar JSON</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <main>
+      <div class="card">
+        <div class="add-row">
+          <input id="titleInput" type="text" placeholder="Título da tarefa" style="flex:1" />
+          <input id="dateInput" type="date" />
+          <input id="tagsInput" type="text" placeholder="tags (separadas por vírgula)" style="width:220px" />
+          <button id="addBtn">Adicionar</button>
+        </div>
+        <div class="meta-row" style="margin-bottom:10px;gap:12px">
+          <select id="filterStatus">
+            <option value="all">Todas</option>
+            <option value="active">Ativas</option>
+            <option value="done">Concluídas</option>
+          </select>
+          <select id="sortBy">
+            <option value="created_desc">Novas primeiro</option>
+            <option value="created_asc">Antigas primeiro</option>
+            <option value="date_asc">Vencimento (próximo)</option>
+            <option value="date_desc">Vencimento (longe)</option>
+          </select>
+          <input id="searchInput" class="search" type="text" placeholder="Buscar título/descrição/tag" />
+          <select id="tagFilter"><option value="">Filtrar por tag</option></select>
+        </div>
+
+        <div id="list"></div>
+        <div id="empty" class="list-empty" style="display:none">Nenhuma tarefa encontrada.</div>
+        <div class="footer-actions">
+          <div class="small" id="stats">—</div>
+          <div style="flex:1"></div>
+          <button id="clearDone" class="muted-btn">Remover concluídas</button>
+          <button id="clearAll" class="muted-btn">Remover todas</button>
+        </div>
+      </div>
+    </main>
+
+    <aside>
+      <div class="card">
+        <h3 style="margin-top:0">Detalhes</h3>
+        <p class="note">Clique no título para editar. Use os botões ao lado para marcar como feita, editar ou excluir. Use export/import para backup.</p>
+        <hr style="border:none;height:1px;background:rgba(255,255,255,0.03);margin:12px 0" />
+        <div style="display:flex;gap:8px;flex-direction:column">
+          <button id="toggleTheme" class="ghost">Alternar Tema</button>
+          <button id="selectAll" class="ghost">Selecionar todas como finalizadas</button>
+          <button id="deselectAll" class="ghost">Marcar todas como ativas</button>
+        </div>
+      </div>
+      <div style="height:12px"></div>
+      <div class="card">
+        <h3 style="margin-top:0">Importante</h3>
+        <p class="note">Dados ficam no seu navegador. Exportar é recomendado antes de limpar. Funciona offline.</p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+/* STORAGE KEY */
+const KEY = 'minhas_tarefas_v1';
+
+/* UTILIDADES */
+const uid = ()=>Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const fmtDate = d => d ? new Date(d).toLocaleDateString('pt-BR') : '—';
+const nowClock = ()=>{
+  const el = document.getElementById('clock');
+  el.textContent = new Date().toLocaleString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+};
+setInterval(nowClock, 30_000);
+nowClock();
+
+/* APP STATE */
+let tasks = [];
+
+/* DOM */
+const listEl = document.getElementById('list');
+const emptyEl = document.getElementById('empty');
+const statsEl = document.getElementById('stats');
+const tagFilterEl = document.getElementById('tagFilter');
+
+/* load/save */
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    tasks = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    tasks = [];
+  }
+}
+function save(){
+  localStorage.setItem(KEY, JSON.stringify(tasks));
+}
+
+/* render */
+function render(){
+  listEl.innerHTML = '';
+  const status = document.getElementById('filterStatus').value;
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const tagFilter = document.getElementById('tagFilter').value;
+  const sortBy = document.getElementById('sortBy').value;
+
+  let visible = tasks.filter(t=>{
+    if(status==='active' && t.done) return false;
+    if(status==='done' && !t.done) return false;
+    if(tagFilter && !(t.tags||[]).includes(tagFilter)) return false;
+    if(q){
+      const hay = (t.title + ' ' + (t.desc||'') + ' ' + (t.tags||[]).join(' ')).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  if(sortBy==='created_desc') visible.sort((a,b)=>b.created-a.created);
+  if(sortBy==='created_asc') visible.sort((a,b)=>a.created-b.created);
+  if(sortBy==='date_asc') visible.sort((a,b)=> (a.due||1e18)-(b.due||1e18));
+  if(sortBy==='date_desc') visible.sort((a,b)=> (b.due||0)-(a.due||0));
+
+  if(visible.length===0){
+    emptyEl.style.display='block';
+  } else {
+    emptyEl.style.display='none';
+    visible.forEach(t=>{
+      const row = document.createElement('div');
+      row.className = 'task' + (t.done ? ' done' : '');
+      // left checkbox
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.checked = !!t.done;
+      chk.addEventListener('change', ()=>{ t.done = chk.checked; t.updated = Date.now(); save(); render(); });
+      row.appendChild(chk);
+
+      // meta
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const h3 = document.createElement('h3');
+      const titleBtn = document.createElement('button');
+      titleBtn.className = 'editable';
+      titleBtn.textContent = t.title || '(sem título)';
+      titleBtn.addEventListener('click', ()=> editTask(t.id));
+      h3.appendChild(titleBtn);
+      if(t.tags && t.tags.length){
+        t.tags.forEach(tag=>{
+          const sp = document.createElement('span'); sp.className='tag'; sp.textContent=tag; h3.appendChild(sp);
+        });
+      }
+      meta.appendChild(h3);
+      if(t.desc) {
+        const p = document.createElement('p'); p.textContent = t.desc; meta.appendChild(p);
+      }
+      const metaRow = document.createElement('div'); metaRow.className='meta-row small';
+      metaRow.innerHTML = `<div>criado: ${new Date(t.created).toLocaleString('pt-BR')}</div><div>venc.: ${t.due ? fmtDate(t.due) : '—'}</div>`;
+      meta.appendChild(metaRow);
+      row.appendChild(meta);
+
+      // right actions
+      const right = document.createElement('div'); right.className='right';
+      const actions = document.createElement('div'); actions.className='task-actions';
+      const editBtn = document.createElement('button'); editBtn.className='ghost'; editBtn.textContent='Editar';
+      editBtn.addEventListener('click', ()=> editTask(t.id));
+      const delBtn = document.createElement('button'); delBtn.className='ghost'; delBtn.textContent='Excluir';
+      delBtn.addEventListener('click', ()=> { if(confirm('Excluir tarefa?')) { tasks = tasks.filter(x=>x.id!==t.id); save(); render(); }});
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+      right.appendChild(actions);
+      row.appendChild(right);
+
+      listEl.appendChild(row);
+    });
+  }
+
+  const total = tasks.length;
+  const done = tasks.filter(t=>t.done).length;
+  statsEl.textContent = `Total: ${total} • Concluídas: ${done}`;
+  refreshTagFilter();
+}
+
+/* tag dropdown */
+function refreshTagFilter(){
+  const tags = new Set();
+  tasks.forEach(t=> (t.tags||[]).forEach(tag=> tags.add(tag)));
+  const old = tagFilterEl.value;
+  tagFilterEl.innerHTML = '<option value="">Filtrar por tag</option>';
+  Array.from(tags).sort().forEach(tag=>{
+    const o = document.createElement('option'); o.value = tag; o.textContent = tag; tagFilterEl.appendChild(o);
+  });
+  if([...tagFilterEl.options].some(o=>o.value===old)) tagFilterEl.value = old;
+}
+
+/* add/edit */
+document.getElementById('addBtn').addEventListener('click', ()=>{
+  const title = document.getElementById('titleInput').value.trim();
+  if(!title){ alert('Coloque um título.'); return; }
+  const due = document.getElementById('dateInput').value || null;
+  const tagsRaw = document.getElementById('tagsInput').value.trim();
+  const tags = tagsRaw ? tagsRaw.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  const t = { id: uid(), title, desc: '', tags, due: due ? new Date(due).toISOString() : null, created: Date.now(), updated: Date.now(), done:false};
+  tasks.push(t);
+  save(); render();
+  document.getElementById('titleInput').value=''; document.getElementById('dateInput').value=''; document.getElementById('tagsInput').value='';
+});
+
+/* edit modal (simple prompt-based) */
+function editTask(id){
+  const t = tasks.find(x=>x.id===id);
+  if(!t) return;
+  const newTitle = prompt('Título', t.title);
+  if(newTitle===null) return;
+  t.title = newTitle.trim() || t.title;
+  const newDesc = prompt('Descrição (deixe vazio para manter)', t.desc||'');
+  if(newDesc!==null) t.desc = newDesc.trim();
+  const newDue = prompt('Data de vencimento (YYYY-MM-DD) ou vazio', t.due ? new Date(t.due).toISOString().slice(0,10) : '');
+  if(newDue!==null) t.due = newDue.trim() ? new Date(newDue.trim()).toISOString() : null;
+  const newTags = prompt('Tags separadas por vírgula', (t.tags||[]).join(','));
+  if(newTags!==null) t.tags = newTags.split(',').map(s=>s.trim()).filter(Boolean);
+  t.updated = Date.now();
+  save(); render();
+}
+
+/* bulk actions */
+document.getElementById('clearDone').addEventListener('click', ()=>{
+  if(!confirm('Remover todas as tarefas concluídas?')) return;
+  tasks = tasks.filter(t=>!t.done); save(); render();
+});
+document.getElementById('clearAll').addEventListener('click', ()=>{
+  if(!confirm('Remover todas as tarefas?')) return;
+  tasks = []; save(); render();
+});
+document.getElementById('selectAll').addEventListener('click', ()=>{
+  tasks.forEach(t=>t.done=true); save(); render();
+});
+document.getElementById('deselectAll').addEventListener('click', ()=>{
+  tasks.forEach(t=>t.done=false); save(); render();
+});
+
+/* filters and search */
+['filterStatus','searchInput','sortBy','tagFilter'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', render);
+});
+
+/* export/import */
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const data = JSON.stringify(tasks, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'tarefas.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+document.getElementById('importBtn').addEventListener('click', ()=> document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change', (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try{
+      const parsed = JSON.parse(ev.target.result);
+      if(!Array.isArray(parsed)) throw new Error('Formato inválido');
+      if(confirm('Substituir suas tarefas atuais pela importação? Clique Cancelar para mesclar.')) {
+        tasks = parsed;
+      } else {
+        // merge: keep unique ids, prefer imported but avoid id collisions
+        const existingIds = new Set(tasks.map(t=>t.id));
+        parsed.forEach(t=>{
+          if(existingIds.has(t.id)) t.id = uid();
+          tasks.push(t);
+        });
+      }
+      save(); render();
+    }catch(err){ alert('Arquivo inválido: ' + err.message); }
+  };
+  reader.readAsText(f);
+  e.target.value = '';
+});
+
+/* theme toggle (simple inversion) */
+let dark = true;
+document.getElementById('toggleTheme').addEventListener('click', ()=>{
+  dark = !dark;
+  if(dark){
+    document.documentElement.style.setProperty('--bg','#0f1724');
+    document.documentElement.style.setProperty('--card','#0b1220');
+  } else {
+    document.documentElement.style.setProperty('--bg','#f6f7fb');
+    document.documentElement.style.setProperty('--card','#ffffff');
+    document.documentElement.style.setProperty('--muted','#45566a');
+    document.documentElement.style.setProperty('--accent','#7c3aed');
+    document.documentElement.style.setProperty('--glass','rgba(0,0,0,0.03)');
+    document.documentElement.style.setProperty('color','#061023');
+  }
+});
+
+/* init sample (if vazio) */
+load();
+if(tasks.length===0){
+  tasks.push({ id: uid(), title: 'Estudar para prova', desc:'Revisar cap. 3 e 4', tags:['estudo'], due: null, created: Date.now()-86400000, updated: Date.now()-86000000, done:false});
+  tasks.push({ id: uid(), title: 'Montar protótipo', desc:'Testar suporte do braço', tags:['FTC','robótica'], due: new Date(Date.now()+2*86400000).toISOString(), created: Date.now()-3600000, updated: Date.now()-3500000, done:false});
+  save();
+}
+render();
+</script>
+</body>
+</html>
