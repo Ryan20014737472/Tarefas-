@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tarefas</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#0f1724;
+  color:white;
+}
+
+header{
+  padding:20px;
+  font-size:28px;
+  font-weight:bold;
+}
+
+.container{
+  max-width:700px;
+  margin:auto;
+  padding:15px;
+}
+
+.add{
+  display:flex;
+  gap:10px;
+}
+
+input{
+  flex:1;
+  padding:10px;
+  border-radius:8px;
+  border:none;
+}
+
+button{
+  padding:10px 15px;
+  border:none;
+  border-radius:8px;
+  background:#7c3aed;
+  color:white;
+  cursor:pointer;
+}
+
+button:hover{
+  opacity:0.85;
+}
+
+.task{
+  background:#1b253a;
+  margin-top:12px;
+  padding:12px;
+  border-radius:10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.done{
+  text-decoration:line-through;
+  opacity:0.6;
+}
+
+.actions button{
+  background:#334155;
+  margin-left:6px;
+}
+
+.delete{
+  background:#ef4444;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>Tarefas</header>
+
+<div class="container">
+
+  <div class="add">
+    <input id="taskInput" placeholder="Nova tarefa...">
+    <button onclick="addTask()">Adicionar</button>
+  </div>
+
+  <div id="list"></div>
+
+</div>
+
+<script>
+const KEY="tarefas_simples";
+
+let tarefas=[];
+
+function salvar(){
+  localStorage.setItem(KEY,JSON.stringify(tarefas));
+}
+
+function carregar(){
+  const dados=localStorage.getItem(KEY);
+  tarefas=dados?JSON.parse(dados):[];
+}
+
+function render(){
+  const list=document.getElementById("list");
+  list.innerHTML="";
+
+  tarefas.forEach((t,i)=>{
+    const div=document.createElement("div");
+    div.className="task"+(t.done?" done":"");
+
+    const title=document.createElement("span");
+    title.textContent=t.text;
+
+    title.onclick=()=>{
+      tarefas[i].done=!tarefas[i].done;
+      salvar();
+      render();
+    };
+
+    const actions=document.createElement("div");
+    actions.className="actions";
+
+    const del=document.createElement("button");
+    del.textContent="X";
+    del.className="delete";
+    del.onclick=()=>{
+      tarefas.splice(i,1);
+      salvar();
+      render();
+    };
+
+    actions.appendChild(del);
+    div.appendChild(title);
+    div.appendChild(actions);
+    list.appendChild(div);
+  });
+}
+
+function addTask(){
+  const input=document.getElementById("taskInput");
+  const text=input.value.trim();
+  if(!text)return;
+
+  tarefas.push({text,done:false});
+  input.value="";
+  salvar();
+  render();
+}
+
+carregar();
+render();
+</script>
+
+</body>
+  </html>
